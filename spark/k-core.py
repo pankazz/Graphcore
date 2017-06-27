@@ -1,26 +1,30 @@
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
+#reading json files from s3
 tweets = spark.read.json(#path to s3 file)
 tweets.registerTempTable("tweets")
-ms_tweets = spark.sql("select  retweeted_status['user']['screen_name'] , user['screen_name'] from tweets where (lower(text) like '%microsoft%') and retweeted_status is not Null ")
-v1 = ms_tweets.rdd.map(lambda x:(x[0],x[1])).distinct()
-v2 = ms_tweets.rdd.map(lambda x:(x[1],x[0])).distinct()
+ms_retweets = spark.sql("select  retweeted_status['user']['screen_name'] , user['screen_name'] from tweets where (lower(text) like '%microsoft%') and retweeted_status is not Null ")
+#building rdd of edges
+edges_1 = ms_retweets.rdd.map(lambda x:(x[0],x[1])).distinct()
+edges_2 = ms_retweets.rdd.map(lambda x:(x[1],x[0])).distinct()
 sc =SparkContext.getOrCreate()
-combo = sc.union([v1,v2])
-combo = combo.filter(lambda x:x[0] != x[1])
-nodes = combo.map(lambda x:(x[0],1))
-deg_agg = nodes.reduceByKey(lambda accum, n: accum + n)
-k_d = deg_agg.filter(lambda x:x[1]<=1).keys().collect()
-new_rdd = combo.filter(lambda x: x[0] not in k_d and x[1] not in k_d)
-while len(k_d) > 0:
-    new_rdd.persist()
-    print new_rdd.count()
-    #b = new_rdd.map(lambda x:(x[0],x[1]))
-    #c = new_rdd.map(lambda x:(x[1],x[0]))
+combined_edges = sc.union([edges_1,edges_2])
+#excluding self retweets
+combined_edges = combined_edges.filter(lambda x:x[0] != x[1])
+#mapping all nodes with value 1
+nodes = combined_edges.map(lambda x:(x[0],1))
+#reducing the mapped rdd to get degree of all nodes
+degree_aggregate = nodes.reduceByKey(lambda accum, n: accum + n)
+#filter nodes with degree 1
+k_degrees = degree_aggregate.filter(lambda x:x[1]<=1).keys().collect()
+transformed_rdd = combined_edges.filter(lambda x: x[0] not in k_degrees and x[1] not in k_degrees)
+#repeat till the condition of mininmum k+1 degrees is attained. 
+while len(k_degrees) > 0:
+    transformed_rdd.persist()
+    print transformed_rdd.count()
     
-    #combined = b.toDF().unionAll(c.toDF())
-    node = new_rdd.map(lambda x:(x[0],1))
+    node = transformed_rdd.map(lambda x:(x[0],1))
     
     
     
@@ -30,18 +34,18 @@ while len(k_d) > 0:
     
     
     
-    k_d_2 = tots.filter(lambda x:x[1]<=1)
+    k_degrees_2 = tots.filter(lambda x:x[1]<=1)
     
-    if k_d_2.isEmpty() == True:
+    if k_degrees_2.isEmpty() == True:
         print("break")
         break
     else:
-        k_d = k_d_2.keys().collect()
+        k_degrees = k_degrees_2.keys().collect()
     
-    print len(k_d)
+    print len(k_degrees)
     
-    new_rdd = new_rdd.filter(lambda x: x[0] not in k_d and x[1] not in k_d)
-    new_rdd.persist()
+    transformed_rdd = transformed_rdd.filter(lambda x: x[0] not in k_degrees and x[1] not in k_degrees)
 
 
-new_rdd.toDF().toPandas().to_csv('graph3.csv',index=False)
+#writing to graph csv file
+transformed_rdd.toDF().toPandas().to_csv('graph3.csv',index=False)
