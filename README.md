@@ -9,4 +9,4 @@ For this project I used the below pipeline
 ![pipeline](images/feature4.png)
 
 # Demo
-The demo is available at pankajchhabra.site
+The demo is available at pankajchhabra.site which shows by default 4-core graph of retweet network of tweets containing the keyword 'Microsoft'. By appending /4c to the url graph to access 3-core graph
