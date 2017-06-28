@@ -6,7 +6,7 @@ The motivation behind this project is to explore the most connected users in a d
 
 # Pipeline
 For this project I used the below pipeline 
-![pipeline](images/feature4.png)
+![pipeline](images/feature4.PNG)
 
 # Demo
 The demo is available at pankajchhabra.site which shows by default 4-core graph of retweet network of tweets containing the keyword 'Microsoft'. By appending /4c to the url graph to access 3-core graph
