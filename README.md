@@ -10,3 +10,6 @@ For this project I used the below pipeline
 
 # Demo
 The demo is available at pankajchhabra.site which shows by default 4-core graph of retweet network of tweets containing the keyword 'Microsoft'. By appending /4c to the url graph to access 3-core graph
+
+# Project Presentation
+The presentation is available [Here](https://docs.google.com/presentation/d/1t7GQTzQTaPmLjNpqY8dcX2k7xZGSATq0ZfgGv5jag8c/edit)
